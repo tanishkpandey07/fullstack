@@ -25,13 +25,30 @@ app.use((req , res ,next)=>{
 })
 
 //error handler middleware
-app.use((error , req , res , next) => {
-    if(res.headerSent) {
-        return next(error);
-    }
-    res.status(error.code || 500)
-        .json({message : error.message || 'An unkown error occured '})
-})
+// app.use((error , req , res , next) => {
+//     if(res.headerSent) {
+//         return next(error);
+//     }
+//     res.status(error.code || 500)
+//         .json({message : error.message || 'An unkown error occured '})
+// })
+
+
+
+app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+  const status = (typeof error.code === 'number' && error.code >= 100 && error.code < 600)
+    ? error.code
+    : 500;
+  
+  res.status(status).json({
+    message: error.message || 'An unknown error occurred!',
+  });
+});
+
+
 
 
 //connecting database and PORT
