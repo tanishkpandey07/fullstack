@@ -3,7 +3,8 @@ const bodyParser = require('body-parser');
 const HttpError = require('./utils/http-error')
 const placesRoutes = require('./routes/place.routes')
 const usersRoutes= require('./routes/users.routes')
-
+const fs = require('fs');
+const path = require('path')
 const connectDB = require('./configs/db.configs')
 
 
@@ -16,6 +17,23 @@ const app = express();
 
 app.use(bodyParser.json());
 
+
+app.use('/upload/images' , express.static(path.join('upload' , 'images')))
+
+//cors origin (cross platform connection )
+app.use((req , res , next) => {
+    res.setHeader('Access-Control-Allow-origin' , '*')
+    res.setHeader(
+        'Accress-Control-Allow-Headers',
+        'Origin , X-Requested-with , Content-Type , Accept , Authorization'
+    )
+
+    res.setHeader('Accress-Control-Allow-Methods','GET , POST , PATCH , DELETE')
+    next();
+}
+)
+
+
 app.use( '/api/places',placesRoutes);
 app.use('/api/users', usersRoutes);
 
@@ -25,30 +43,20 @@ app.use((req , res ,next)=>{
 })
 
 //error handler middleware
-// app.use((error , req , res , next) => {
-//     if(res.headerSent) {
-//         return next(error);
-//     }
-//     res.status(error.code || 500)
-//         .json({message : error.message || 'An unkown error occured '})
-// })
+app.use((error , req , res , next) => {
 
+    if (req.file) {
+        fs.unlink(req.file.path , rerr=> {
+            console.log(err)
+        })
+    }
 
-
-app.use((error, req, res, next) => {
-  if (res.headersSent) {
-    return next(error);
-  }
-  const status = (typeof error.code === 'number' && error.code >= 100 && error.code < 600)
-    ? error.code
-    : 500;
-  
-  res.status(status).json({
-    message: error.message || 'An unknown error occurred!',
-  });
-});
-
-
+    if(res.headerSent) {
+        return next(error);
+    }
+    res.status(error.code || 500)
+        .json({message : error.message || 'An unkown error occured '})
+})
 
 
 //connecting database and PORT

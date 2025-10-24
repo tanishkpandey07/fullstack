@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs')
 const HttpError = require('../utils/http-error');
 const {validationResult} = require("express-validator");
 
@@ -99,7 +100,7 @@ const createPlace =  async (req , res , next)=> {
     }
 
 
-    const { title , description , address , creator } = req.body ;
+    const { title , description , address  } = req.body ;
 
     let coordinates;
     
@@ -115,8 +116,8 @@ const createPlace =  async (req , res , next)=> {
         description,
         address,
         location: coordinates,
-        image: "ggggg",
-        creator 
+        image: req.file.path,
+        creator :req.userData.userId
     })
 
     let user;
@@ -192,6 +193,11 @@ const updatePlace = async (req , res , next) => {
     return next(new HttpError('could not update the place' , 500))
    }
 
+
+   if(place.creator.toString() !== req.userData.userId) {
+    return next(new HttpError('You are not allowed to edit this place' , 401))
+   }
+
     res.status(200).json({place: place.toObject({getters:true})})
 
 }
@@ -205,15 +211,11 @@ const deletePlace = async(req , res , next) => {
         return next(new HttpError('couldnt delete',500))
     }
 
-    if(!place) {
-        const error = new HttpError(
-            'Could not find place for this id' , 
-            404
-        )
-        return next(error)
-    }
+    if(place.creator.id !== req.userData.userId) {
+    return next(new HttpError('You are not allowed to delete this place' , 403))
+   }
 
-
+    const imagePath = place.image
 
     try {
        const sess = await mongoose.startSession();
@@ -226,6 +228,17 @@ const deletePlace = async(req , res , next) => {
          return next(new HttpError(' someting went wrong ,couldnt delete place',500))
         
     }
+
+    fs.unlink(imagePath, err=> {
+        console.log(err);
+    })
+
+
+    // try {
+    //    await place.remove();
+    // } catch (error) {
+    //      return next(new HttpError('couldnt delete',500))
+    // }
 
     res.status(200).json({message:'Deleted place'})
 }
