@@ -1,14 +1,17 @@
 const express = require('express');
 const usersController = require('../controllers/users.controllers');
 const {check} = require('express-validator');
-
+const fileUpload = require('../middlewares/multer.middlewares')
 
 const router = express.Router();
 
 
 
 router.get('/'  ,usersController.getUsers);
-router.post('/signup' , [
+router.post('/signup' , 
+    fileUpload.single('image')
+    ,
+    [
     check('name')
     .not()
     .isEmpty(),
